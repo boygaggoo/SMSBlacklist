@@ -1,7 +1,6 @@
 package ca.tyrannosaur.SMSBlacklist;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import android.app.Notification;
@@ -108,7 +107,7 @@ public class BlacklistService extends Service {
    private void showNotification() {
       NotificationManager nmanager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
-      Notification notification = new Notification(R.drawable.ic_stat_skull, getString(R.string.notification_blacklistEnabled), (new Date()).getTime());
+      Notification notification = new Notification(R.drawable.ic_stat_skull, getString(R.string.notification_blacklistEnabled), 0);
 
       notification.flags |= Notification.FLAG_NO_CLEAR;
       notification.flags |= Notification.FLAG_ONGOING_EVENT;
