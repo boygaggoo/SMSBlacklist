@@ -37,21 +37,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
    @Override
    public void onUpgrade(SQLiteDatabase database, int oldVersion, int newVersion) {
       Log.w(DatabaseHelper.class.getName(), String.format("Updgrading database from version %d to %d. This will not destroy data.", oldVersion, newVersion));
-
-      // Affinity and a new log format were added in this version
-      if (oldVersion < 6) {
-         database.beginTransaction();
-         database.execSQL(String.format("alter table %s add column %s text not null", TABLE_FILTERS, BlacklistContract.Filters.FILTER_MATCH_AFFINITY));
-         database.execSQL(String.format("alter table %s add column %s integer not null default 0", TABLE_FILTERS, BlacklistContract.Filters.UNREAD));
-         database.execSQL(String.format("update %s set %s = %s where %(1)s = null", TABLE_FILTERS, BlacklistContract.Filters.FILTER_MATCH_AFFINITY, BlacklistContract.Filters.AFFINITY_RIGHT));
-         database.execSQL(String.format("drop table if exists %s", TABLE_LOGS));
-         createLogs(database);
-         database.endTransaction();
-      }
-      else {
-         database.execSQL(String.format("drop table if exists %s", TABLE_FILTERS));
-         database.execSQL(String.format("drop table if exists %s", TABLE_LOGS));
-         onCreate(database);
-      }
+      database.execSQL(String.format("drop table if exists %s", TABLE_FILTERS));
+      database.execSQL(String.format("drop table if exists %s", TABLE_LOGS));
+      onCreate(database);
    }
 }
