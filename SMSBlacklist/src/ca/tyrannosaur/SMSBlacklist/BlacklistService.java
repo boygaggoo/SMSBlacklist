@@ -107,7 +107,10 @@ public class BlacklistService extends Service {
    private void showNotification() {
       NotificationManager nmanager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
-      Notification notification = new Notification(R.drawable.ic_stat_skull, getString(R.string.notification_blacklistEnabled), 0);
+      Notification notification = new Notification(
+         R.drawable.ic_stat_skull, 
+         getString(R.string.notification_blacklistEnabled), 
+         0);
 
       notification.flags |= Notification.FLAG_NO_CLEAR;
       notification.flags |= Notification.FLAG_ONGOING_EVENT;
@@ -116,7 +119,11 @@ public class BlacklistService extends Service {
       Intent notificationIntent = new Intent(Intent.ACTION_MAIN, null, this, Blacklist.class);
       PendingIntent contentIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
 
-      notification.setLatestEventInfo(this, getString(R.string.app_name), getString(R.string.notification_blacklistEnabled), contentIntent);
+      notification.setLatestEventInfo(
+         this, 
+         getString(R.string.app_name), 
+         getString(R.string.notification_blacklistEnabled), 
+         contentIntent);
 
       nmanager.notify(ONGOING_ID, notification);
    }

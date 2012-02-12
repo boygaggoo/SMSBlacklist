@@ -1,6 +1,7 @@
 package ca.tyrannosaur.SMSBlacklist;
 
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import android.content.ContentResolver;
 import android.net.Uri;
@@ -21,7 +22,7 @@ public class BlacklistContract {
       ROOT_URI = new Uri.Builder().scheme(ContentResolver.SCHEME_CONTENT).authority(AUTHORITY).build();
    }
 
-   public static final Pattern buildFilterPattern(String filter, String affinity) {
+   public static final Pattern buildFilterPattern(String filter, String affinity) throws PatternSyntaxException {
       if (BlacklistContract.Filters.AFFINITY_EXACT.equals(affinity))
          return Pattern.compile(String.format("^%s$", filter));
       else if (BlacklistContract.Filters.AFFINITY_LEFT.equals(affinity))
@@ -30,6 +31,8 @@ public class BlacklistContract {
          return Pattern.compile(String.format("^.*%s$", filter));
       else if (BlacklistContract.Filters.AFFINITY_SUBSTR.equals(affinity))
          return Pattern.compile(String.format("^.*%s.*$", filter));
+      else if (BlacklistContract.Filters.AFFINITY_REGEX.equals(affinity))
+         return Pattern.compile(filter);
       else
          return null;
    }
@@ -67,10 +70,14 @@ public class BlacklistContract {
       public static final String CONTENT_ITEM_TYPE = "vnd.android.cursor.item/vnd.blacklist.log";
 
       // Column names for the ContentProvider
-      public static final String MESSAGE_PDU = "messagePdu", DATE_RECEIVED = "dateReceived";
+      public static final String 
+      MESSAGE_PDU = "messagePdu", 
+      DATE_RECEIVED = "dateReceived";
 
       // Column names
-      public static final String FILTER_ID = "filterId", PATH = "path";
+      public static final String 
+      FILTER_ID = "filterId", 
+      PATH = "path";
    }
 
    /**
@@ -82,11 +89,22 @@ public class BlacklistContract {
    public static class Filters implements BaseColumns {
       public static final String DEFAULT_SORT_ORDER = "filterText ASC";
 
-      public static final String CONTENT_TYPE = "vnd.android.cursor.dir/vnd.blacklist.filter", CONTENT_ITEM_TYPE = "vnd.android.cursor.item/vnd.blacklist.filter";
+      public static final String
+            CONTENT_TYPE = "vnd.android.cursor.dir/vnd.blacklist.filter",
+            CONTENT_ITEM_TYPE = "vnd.android.cursor.item/vnd.blacklist.filter";
 
-      public static final String AFFINITY_LEFT = "left", AFFINITY_RIGHT = "right", AFFINITY_EXACT = "exact", AFFINITY_SUBSTR = "substr";
+      public static final String
+            AFFINITY_LEFT = "left",
+            AFFINITY_RIGHT = "right",
+            AFFINITY_EXACT = "exact",
+            AFFINITY_SUBSTR = "substr",
+            AFFINITY_REGEX = "regex";
 
       // Column names
-      public static final String FILTER_TEXT = "filterText", NOTE = "note", FILTER_MATCH_AFFINITY = "filterMatchAffinity", UNREAD = "unread";
+      public static final String 
+      FILTER_TEXT = "filterText", 
+      NOTE = "note", 
+      FILTER_MATCH_AFFINITY = "filterMatchAffinity",
+      UNREAD = "unread";
    }
 }

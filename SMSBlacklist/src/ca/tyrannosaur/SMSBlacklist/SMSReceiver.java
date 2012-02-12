@@ -3,6 +3,7 @@ package ca.tyrannosaur.SMSBlacklist;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
@@ -39,8 +40,10 @@ public class SMSReceiver extends BroadcastReceiver {
     * @return a {@link Pattern} used to test a phone number
     */
    private Pattern buildFilterPattern(Cursor c) {
-      String affinity = c.getString(c.getColumnIndexOrThrow(BlacklistContract.Filters.FILTER_MATCH_AFFINITY));
-      String text = c.getString(c.getColumnIndexOrThrow(BlacklistContract.Filters.FILTER_TEXT));
+      String affinity = c.getString(
+         c.getColumnIndexOrThrow(BlacklistContract.Filters.FILTER_MATCH_AFFINITY));
+      String text = c.getString(
+         c.getColumnIndexOrThrow(BlacklistContract.Filters.FILTER_TEXT));
 
       return BlacklistContract.buildFilterPattern(text, affinity);
    }
@@ -52,7 +55,12 @@ public class SMSReceiver extends BroadcastReceiver {
 
       if (bundle != null) {
          // Get a list of filters
-         Cursor filters = contentResolver.query(BlacklistContract.buildFiltersListUri(), null, null, null, BlacklistContract.Filters.DEFAULT_SORT_ORDER);
+         Cursor filters = contentResolver.query(
+            BlacklistContract.buildFiltersListUri(), 
+            null, 
+            null, 
+            null, 
+            BlacklistContract.Filters.DEFAULT_SORT_ORDER);
 
          // The raw SMS data
          Object[] pdus = (Object[]) bundle.get("pdus");
@@ -74,26 +82,43 @@ public class SMSReceiver extends BroadcastReceiver {
 
             filters.moveToFirst();
             while (filters.isAfterLast() == false) {
-               filterPattern = buildFilterPattern(filters);
-               filterMatcher = filterPattern.matcher(message.getOriginatingAddress());
-
-               // Stuff the invalid message in an array for later
-               if (filterMatcher.matches()) {
-                  ContentValues row = new ContentValues();
-                  row.put(BlacklistContract.Filters.FILTER_TEXT, filters.getString(filters.getColumnIndexOrThrow(BlacklistContract.Filters.FILTER_TEXT)));
-                  row.put(BlacklistContract.Filters.FILTER_MATCH_AFFINITY, filters.getString(filters.getColumnIndexOrThrow(BlacklistContract.Filters.FILTER_MATCH_AFFINITY)));
-                  row.put(BlacklistContract.Filters.NOTE, filters.getString(filters.getColumnIndexOrThrow(BlacklistContract.Filters.NOTE)));
-                  row.put(BlacklistContract.Logs.DATE_RECEIVED, message.getTimestampMillis());
-                  row.put(BlacklistContract.Logs.FILTER_ID, filters.getString(filters.getColumnIndexOrThrow(BlacklistContract.Filters._ID)));
-                  row.put(BlacklistContract.Logs.MESSAGE_PDU, message.getPdu().clone());
-
-                  invalidMessages.add(row);
-                  invalidFound = true;
-                  break;
+               try {
+                  filterPattern = buildFilterPattern(filters);
+                  filterMatcher = filterPattern.matcher(message.getOriginatingAddress());
+   
+                  // Stuff the invalid message in an array for later
+                  if (filterMatcher.matches()) {
+                     ContentValues row = new ContentValues();
+                     row.put(
+                        BlacklistContract.Filters.FILTER_TEXT, 
+                        filters.getString(filters.getColumnIndexOrThrow(BlacklistContract.Filters.FILTER_TEXT)));
+                     row.put(
+                        BlacklistContract.Filters.FILTER_MATCH_AFFINITY, 
+                        filters.getString(filters.getColumnIndexOrThrow(BlacklistContract.Filters.FILTER_MATCH_AFFINITY)));
+                     row.put(
+                        BlacklistContract.Filters.NOTE, 
+                        filters.getString(filters.getColumnIndexOrThrow(BlacklistContract.Filters.NOTE)));
+                     row.put(
+                        BlacklistContract.Logs.DATE_RECEIVED, 
+                        message.getTimestampMillis());
+                     row.put(
+                        BlacklistContract.Logs.FILTER_ID, 
+                        filters.getString(filters.getColumnIndexOrThrow(BlacklistContract.Filters._ID)));
+                     row.put(
+                        BlacklistContract.Logs.MESSAGE_PDU, 
+                        message.getPdu().clone());
+   
+                     invalidMessages.add(row);
+                     invalidFound = true;
+                     break;
+                  }
                }
-               else {
-                  filters.moveToNext();
+               catch (PatternSyntaxException e) {
+                  Log.w(TAG, "An invalid pattern was inserted in the database", e);
                }
+               
+               filters.moveToNext();
+                  
             }
 
             if (!invalidFound)

@@ -1,6 +1,7 @@
 package ca.tyrannosaur.SMSBlacklist;
 
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import android.app.Activity;
 import android.content.ContentValues;
@@ -9,6 +10,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.telephony.PhoneNumberFormattingTextWatcher;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.View;
@@ -26,14 +28,25 @@ public class AddBlacklistFilter extends Activity implements TextWatcher {
    /**
     * Affinity text labels (in order)
     */
-   private final int[] affinityLabels = { R.string.affinity_right, R.string.affinity_left, R.string.affinity_exact, R.string.affinity_substr, };
+   private final int[] affinityLabels = {
+         R.string.affinity_right,
+         R.string.affinity_left,
+         R.string.affinity_exact,
+         R.string.affinity_substr,
+         R.string.affinity_regex
+   };
 
    /**
     * Affinity values (in order). A right-affinity is assumed to be the most
     * likely
     */
-   private final String[] affinityValues = { BlacklistContract.Filters.AFFINITY_RIGHT, BlacklistContract.Filters.AFFINITY_LEFT, BlacklistContract.Filters.AFFINITY_EXACT,
-         BlacklistContract.Filters.AFFINITY_SUBSTR, };
+   private final String[] affinityValues = {
+         BlacklistContract.Filters.AFFINITY_RIGHT,
+         BlacklistContract.Filters.AFFINITY_LEFT,
+         BlacklistContract.Filters.AFFINITY_EXACT,
+         BlacklistContract.Filters.AFFINITY_SUBSTR,
+         BlacklistContract.Filters.AFFINITY_REGEX
+   };
 
    private EditText filterText;
    private EditText noteText;
@@ -42,6 +55,8 @@ public class AddBlacklistFilter extends Activity implements TextWatcher {
    private ImageView filterPreviewMatch;
    private Button saveButton;
 
+   private int prevAffinityPosition = Spinner.INVALID_POSITION;
+   
    private Pattern filterPreviewPattern;
 
    private final class UserInput {
@@ -93,7 +108,6 @@ public class AddBlacklistFilter extends Activity implements TextWatcher {
       noteText.addTextChangedListener(this);
 
       filterPreview.addTextChangedListener(new TextWatcher() {
-
          @Override
          public void afterTextChanged(Editable s) {
          }
@@ -122,9 +136,8 @@ public class AddBlacklistFilter extends Activity implements TextWatcher {
       // Populate the affinity Spinner with affinity String values.
       // The affinity of a filter is the position in the phone number
       // string from which a the filter text is matched.
-
+      //
       // See the SMSReceiver class for the regular expressions used.
-
       String[] labels = new String[affinityLabels.length];
       for (int i = 0; i < affinityLabels.length; i++)
          labels[i] = getString(affinityLabels[i]);
@@ -134,14 +147,33 @@ public class AddBlacklistFilter extends Activity implements TextWatcher {
       adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
       filterAffinity.setAdapter(adapter);
       filterAffinity.setOnItemSelectedListener(new OnItemSelectedListener() {
+         private void clearFilterPattern(int oldPos, int newPos) {
+            if (oldPos == Spinner.INVALID_POSITION || newPos == Spinner.INVALID_POSITION)
+               return;
+            
+            String prevAffinity = affinityValues[oldPos];
+            String newAffinity = affinityValues[newPos];
+            
+            // Clear the filter text of any regular expression if
+            // the affinity is not a regular expression anymore
+            if (BlacklistContract.Filters.AFFINITY_REGEX.equals(prevAffinity) 
+                  && !BlacklistContract.Filters.AFFINITY_REGEX.equals(newAffinity)) {
+               filterText.setText("");               
+            }            
+         }
+         
          @Override
          public void onItemSelected(AdapterView<?> arg0, View arg1, int item, long arg3) {
+            clearFilterPattern(prevAffinityPosition, item);
             updateFilterPreviewPattern(item);
+            prevAffinityPosition = item;
          }
 
          @Override
          public void onNothingSelected(AdapterView<?> arg0) {
+            clearFilterPattern(prevAffinityPosition, Spinner.INVALID_POSITION);
             updateFilterPreviewPattern(true);
+            prevAffinityPosition = Spinner.INVALID_POSITION;
          }
       });
    }
@@ -167,11 +199,23 @@ public class AddBlacklistFilter extends Activity implements TextWatcher {
       String preview = getCleanPreviewText();
       String affinity = affinityValues[affinityPosition];
 
+      if (BlacklistContract.Filters.AFFINITY_REGEX.equals(affinity)) {
+         filterText.setInputType(InputType.TYPE_CLASS_TEXT);
+      }
+      else {
+         filterText.setInputType(InputType.TYPE_CLASS_PHONE);
+      }
+      
       boolean matches = false;
 
       if (!TextUtils.isEmpty(preview) && !TextUtils.isEmpty(filter) && !clearPattern) {
-         filterPreviewPattern = BlacklistContract.buildFilterPattern(filter, affinity);
-         matches = filterPreviewPattern.matcher(preview).matches();
+         try {
+            filterPreviewPattern = BlacklistContract.buildFilterPattern(filter, affinity);
+            matches = filterPreviewPattern.matcher(preview).matches();
+         }
+         catch (PatternSyntaxException e) {
+            // Don't preview yet
+         }         
       }
       else {
          filterPreviewPattern = null;
@@ -213,7 +257,14 @@ public class AddBlacklistFilter extends Activity implements TextWatcher {
 
    private String getCleanFilterText() {
       String text = filterText.getText().toString();
-      return text.replaceAll("[^0-9]", "");
+      String affinity = affinityValues[filterAffinity.getSelectedItemPosition()];
+      
+      if (BlacklistContract.Filters.AFFINITY_REGEX.equals(affinity)) {
+         return text; 
+      }
+      else {
+         return text.replaceAll("[^0-9]", "");
+      }
    }
 
    private String getCleanNoteText() {
@@ -228,6 +279,17 @@ public class AddBlacklistFilter extends Activity implements TextWatcher {
    private boolean isSaveable() {
       String filter = getCleanFilterText();
       String note = getCleanNoteText();
+      String affinity = affinityValues[filterAffinity.getSelectedItemPosition()];
+
+      // Try to compile this. If it's invalid, an error is thrown and we don't
+      // save. Inelegant but whatever.
+      try {
+         if (BlacklistContract.Filters.AFFINITY_REGEX.equals(affinity))
+            filterPreviewPattern = BlacklistContract.buildFilterPattern(filter, affinity);         
+      }
+      catch (PatternSyntaxException e) {
+         return false;
+      }
 
       return !TextUtils.isEmpty(filter) && !TextUtils.isEmpty(note);
    }

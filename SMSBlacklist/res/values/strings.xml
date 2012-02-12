@@ -36,5 +36,6 @@
     <string name="affinity_right">end of number</string>
     <string name="affinity_exact">exact number</string>
     <string name="affinity_substr">anywhere in the number</string>
+    <string name="affinity_regex">regular expression</string>
 
 </resources>

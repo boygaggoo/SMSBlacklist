@@ -3,6 +3,7 @@ package ca.tyrannosaur.SMSBlacklist;
 import android.app.Activity;
 import android.content.Context;
 import android.database.Cursor;
+import android.text.Html;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -177,10 +178,10 @@ public class StaticViewCursorAdapter extends SimpleCursorAdapter {
       String note = c.getString(c.getColumnIndexOrThrow(BlacklistContract.Filters.NOTE));
       int unread = c.getInt(c.getColumnIndexOrThrow(BlacklistContract.Filters.UNREAD));
 
-      if (unread > 1)
-         holder.filterAndCount.setText(String.format("%s (%d)", filterText, unread));
+      if (unread > 1)         
+         holder.filterAndCount.setText(Html.fromHtml(String.format("<b>%s</b> (%d)", filterText, unread)));
       else
-         holder.filterAndCount.setText(filterText);
+         holder.filterAndCount.setText(Html.fromHtml(String.format("<b>%s</b>", filterText)));
 
       holder.note.setText(note);
 
@@ -192,6 +193,8 @@ public class StaticViewCursorAdapter extends SimpleCursorAdapter {
          holder.filterAffinity.setImageResource(R.drawable.list_affinity_right);
       else if (BlacklistContract.Filters.AFFINITY_SUBSTR.equals(affinity))
          holder.filterAffinity.setImageResource(R.drawable.list_affinity_substr);
+      else if (BlacklistContract.Filters.AFFINITY_REGEX.equals(affinity))
+         holder.filterAffinity.setImageResource(R.drawable.list_affinity_regexp);
       else
          holder.filterAffinity.setImageResource(R.drawable.list_affinity_unknown);
 
