@@ -47,7 +47,7 @@
                 android:padding="8dip"
                 android:textAppearance="?android:attr/textAppearanceLarge"
                 android:textColor="#FFFFFF"
-                android:textSize="22dip" android:hint="@string/hint_filterPreview" android:background="@drawable/phone_background" android:freezesText="true"/>
+                android:textSize="22dip" android:background="@drawable/phone_background" android:freezesText="true" android:ellipsize="start"/>
         </RelativeLayout>
 
         <TextView

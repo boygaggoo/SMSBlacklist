@@ -27,35 +27,12 @@ import android.util.Log;
 /**
  * Abstracted creation and modification of blacklist filters and message logs.
  * 
- * @author charlie
- * 
  */
 public class BlacklistContentProvider extends ContentProvider {
-
-   private static final String TAG = BlacklistContentProvider.class.getName();
 
    /**
     * Aggregates additional SQL 'where' clauses into one clause, given an
     * initial where fragment and its associated parameters (if any).
-    * 
-    * <pre>
-    * {
-    *    &#064;code
-    *    String where = &quot;color = ?&quot;;
-    *    String[] whereParams = {
-    *          &quot;pink&quot;
-    *    };
-    * 
-    *    SQLiteWhereExtender wextender = new SQLiteWhereExtender(where, whereParams);
-    *    wextender.append(&quot;size = ?&quot;, 100);
-    *    wextender.append(&quot;quantity &gt; ?&quot;, 50);
-    * 
-    *    wextender.getWhere(); // &quot;(color = ?) AND (size = ?) AND (quantity &gt; ?)
-    *    wextender.getParameters(); // {&quot;pink&quot;, &quot;100&quot;, &quot;50&quot;}
-    * }
-    * </pre>
-    * 
-    * @author charlie
     * 
     */
    public static class SQLiteWhereExtender {
@@ -101,7 +78,17 @@ public class BlacklistContentProvider extends ContentProvider {
       }
    }
 
-   private static final int FILTERS = 1, FILTER_ID = 2, LOGS_FOR_FILTER = 3, LOG_ID = 4, LOGS = 5;
+  
+   private static final String TAG = BlacklistContentProvider.class.getName();
+   private static final String EXTERNAL_STORAGE_PATH = 
+            "/Android/data/ca.tyrannosaur.SMSBlacklist/files/";
+   
+   private static final int 
+            FILTERS = 1, 
+            FILTER_ID = 2, 
+            LOGS_FOR_FILTER = 3, 
+            LOG_ID = 4, 
+            LOGS = 5;
 
    private static final UriMatcher uriMatcher;
 
@@ -109,23 +96,72 @@ public class BlacklistContentProvider extends ContentProvider {
       uriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 
       // All filters
-      uriMatcher.addURI(BlacklistContract.AUTHORITY, "filters", FILTERS);
+      uriMatcher.addURI(Contract.AUTHORITY, "filters", FILTERS);
 
       // A specific filter
-      uriMatcher.addURI(BlacklistContract.AUTHORITY, "filters/#", FILTER_ID);
+      uriMatcher.addURI(Contract.AUTHORITY, "filters/#", FILTER_ID);
 
       // All logged messages. Only used for inserts and updates
-      uriMatcher.addURI(BlacklistContract.AUTHORITY, "logs", LOGS);
+      uriMatcher.addURI(Contract.AUTHORITY, "logs", LOGS);
 
       // All logged messages for a specific filter. Only used for querying
-      uriMatcher.addURI(BlacklistContract.AUTHORITY, "logsForFilter/#", LOGS_FOR_FILTER);
+      uriMatcher.addURI(Contract.AUTHORITY, "logsForFilter/#", LOGS_FOR_FILTER);
 
       // A specific logged message. Only used for querying and deleting
-      uriMatcher.addURI(BlacklistContract.AUTHORITY, "logs/#", LOG_ID);
+      uriMatcher.addURI(Contract.AUTHORITY, "logs/#", LOG_ID);
    }
-
+   
    private DatabaseHelper dbHelper;
+   
 
+   /*
+    * Construct a JSONObject that represents the given filter and SMS 
+    * information from the provided ContentValues. 
+    */
+   @SuppressWarnings("unchecked")
+   private static final JSONObject getLogJSON(ContentValues values)  {
+      
+      String filterText = values.getAsString(Contract.Filters.FILTER_TEXT);
+      String filterNote = values.getAsString(Contract.Filters.NOTE);
+      String filterAffinity = values.getAsString(Contract.Filters.FILTER_MATCH_AFFINITY);
+      long received = values.getAsLong(Contract.Logs.DATE_RECEIVED);
+      
+      SmsMessage message = SmsMessage.createFromPdu(
+                                     values.getAsByteArray(Contract.Logs.MESSAGE_PDU));
+
+      JSONObject filterObject = new JSONObject();
+      JSONObject messageObject = new JSONObject();
+      JSONObject rootObject = new JSONObject();
+
+      filterObject.put("text", filterText);
+      filterObject.put("note", filterNote);
+      filterObject.put("affinity", filterAffinity);
+
+      messageObject.put("sender", message.getDisplayOriginatingAddress());
+      messageObject.put("body", message.getDisplayMessageBody());
+      messageObject.put("sent", new Date(message.getTimestampMillis()).toGMTString());
+      messageObject.put("received", new Date(received).toGMTString());
+
+      rootObject.put("filter", filterObject);
+      rootObject.put("message", messageObject);
+      
+      return rootObject;
+   }   
+
+   /*
+    * Is the external storage writeable?
+    */
+   private static boolean isEternalStorageWriteable() {
+      String state = Environment.getExternalStorageState();
+
+      if (Environment.MEDIA_MOUNTED.equals(state))
+         return true;      
+      else if (Environment.MEDIA_MOUNTED_READ_ONLY.equals(state))
+         return false;      
+      else
+         return false;      
+   }
+   
    @Override
    public boolean onCreate() {
       dbHelper = new DatabaseHelper(getContext());
@@ -136,16 +172,16 @@ public class BlacklistContentProvider extends ContentProvider {
    public String getType(Uri uri) {
       switch (uriMatcher.match(uri)) {
          case FILTERS:
-            return BlacklistContract.Filters.CONTENT_TYPE;
+            return Contract.Filters.CONTENT_TYPE;
 
          case FILTER_ID:
-            return BlacklistContract.Filters.CONTENT_ITEM_TYPE;
+            return Contract.Filters.CONTENT_ITEM_TYPE;
 
          case LOGS_FOR_FILTER:
-            return BlacklistContract.Logs.CONTENT_TYPE;
+            return Contract.Logs.CONTENT_TYPE;
 
          case LOG_ID:
-            return BlacklistContract.Logs.CONTENT_ITEM_TYPE;
+            return Contract.Logs.CONTENT_ITEM_TYPE;
 
          default:
             throw new IllegalArgumentException(String.format("Unkown URI %s", uri));
@@ -167,7 +203,7 @@ public class BlacklistContentProvider extends ContentProvider {
          case FILTER_ID:
             {
                whereExtender.append(
-                  String.format("%s = ?", BlacklistContract.Filters._ID),
+                  String.format("%s = ?", Contract.Filters._ID),
                   new String[] {
                      uri.getPathSegments().get(1)
                   });
@@ -181,7 +217,7 @@ public class BlacklistContentProvider extends ContentProvider {
          case LOGS_FOR_FILTER:
             {
                whereExtender.append(
-                  String.format("%s = ?", BlacklistContract.Filters._ID),
+                  String.format("%s = ?", Contract.Filters._ID),
                   new String[] {
                      uri.getPathSegments().get(1)
                   });
@@ -195,7 +231,7 @@ public class BlacklistContentProvider extends ContentProvider {
          case LOG_ID:
             {
                whereExtender.append(
-                  String.format("%s = ?", BlacklistContract.Logs._ID),
+                  String.format("%s = ?", Contract.Logs._ID),
                   new String[] {
                      uri.getPathSegments().get(1)
                   });
@@ -254,7 +290,7 @@ public class BlacklistContentProvider extends ContentProvider {
                rowId = db.insert(DatabaseHelper.TABLE_FILTERS, null, values);
 
                if (rowId > 0) {
-                  toReturn = BlacklistContract.buildFilterUri(rowId);
+                  toReturn = Contract.buildFilterUri(rowId);
                   getContext().getContentResolver().notifyChange(toReturn, null);
                   return toReturn;
                }
@@ -290,7 +326,7 @@ public class BlacklistContentProvider extends ContentProvider {
          case FILTER_ID:
             {
                qBuilder.setTables(DatabaseHelper.TABLE_FILTERS);
-               qBuilder.appendWhere(String.format("%s = ", BlacklistContract.Filters._ID));
+               qBuilder.appendWhere(String.format("%s = ", Contract.Filters._ID));
                qBuilder.appendWhereEscapeString(uri.getPathSegments().get(1));
                break;
             }
@@ -307,7 +343,7 @@ public class BlacklistContentProvider extends ContentProvider {
          selectionArgs,
          null,
          null,
-         sortOrder == null ? BlacklistContract.Filters.DEFAULT_SORT_ORDER : sortOrder);
+         sortOrder == null ? Contract.Filters.DEFAULT_SORT_ORDER : sortOrder);
       c.setNotificationUri(getContext().getContentResolver(), uri);
       return c;
    }
@@ -325,97 +361,62 @@ public class BlacklistContentProvider extends ContentProvider {
    }
 
    /*
-    * Ugly, ugly
+    * Insert a single log entry into the database, consisting of
+    * the name of the file written to disk.
     */
-   @SuppressWarnings("unchecked")
-   private synchronized Uri insertLogForFilter(Uri uri, ContentValues values) {
+   private Uri insertLogForFilter(Uri uri, ContentValues values) {
       Uri toReturn;
-      SQLiteDatabase db = dbHelper.getWritableDatabase();
-      boolean externalStorageWriteable = false;
-
-      String state = Environment.getExternalStorageState();
-
-      if (Environment.MEDIA_MOUNTED.equals(state)) {
-         externalStorageWriteable = true;
-      }
-      else if (Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
-         externalStorageWriteable = false;
+      
+      SQLiteDatabase db = dbHelper.getWritableDatabase();            
+      JSONObject logJSON = BlacklistContentProvider.getLogJSON(values);                  
+      UUID uuid = UUID.randomUUID();
+      
+      File dataPath = new File(
+               Environment.getExternalStorageDirectory(),
+               EXTERNAL_STORAGE_PATH);
+      File dataFile = new File(dataPath, String.format("%s.json", uuid.toString()));
+                  
+      if (!isEternalStorageWriteable()) {
+         Log.e(TAG, "External storage was not writeable and a message could not be saved");         
       }
       else {
-         externalStorageWriteable = false;
+         if (dataPath != null)
+            dataPath.mkdirs();
+         
+         try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(dataFile));
+            writer.write(logJSON.toJSONString());
+            writer.close();
+         }
+         catch (IOException e) {
+            Log.e(TAG, "Could not write SMS JSON to external media");
+         }
       }
 
-      if (!externalStorageWriteable)
-         Log.e(TAG, "External storage was not writeable and a message could not be saved");
-
-      String filterText = values.getAsString(BlacklistContract.Filters.FILTER_TEXT);
-      String filterNote = values.getAsString(BlacklistContract.Filters.NOTE);
-      String filterAffinity = values.getAsString(BlacklistContract.Filters.FILTER_MATCH_AFFINITY);
-
-      long received = values.getAsLong(BlacklistContract.Logs.DATE_RECEIVED);
-      SmsMessage message = SmsMessage.createFromPdu(
-                                     values.getAsByteArray(BlacklistContract.Logs.MESSAGE_PDU));
-
-      JSONObject filterObject = new JSONObject();
-      JSONObject messageObject = new JSONObject();
-      JSONObject rootObject = new JSONObject();
-
-      filterObject.put("text", filterText);
-      filterObject.put("note", filterNote);
-      filterObject.put("affinity", filterAffinity);
-
-      messageObject.put("sender", message.getDisplayOriginatingAddress());
-      messageObject.put("body", message.getDisplayMessageBody());
-      messageObject.put("sent", new Date(message.getTimestampMillis()).toGMTString());
-      messageObject.put("received", new Date(received).toGMTString());
-
-      rootObject.put("filter", filterObject);
-      rootObject.put("message", messageObject);
-
-      // This file name is probably longer than most messages. Hah.
-      UUID uuid = UUID.randomUUID();
-      File dataPath = new File(
-            Environment.getExternalStorageDirectory(),
-            "/Android/data/ca.tyrannosaur.SMSBlacklist/files/");
-
-      File file = new File(dataPath, String.format("%d-%s.json", received, uuid.toString()));
-
-      if (dataPath != null)
-         dataPath.mkdirs();
-
-      try {
-         BufferedWriter writer = new BufferedWriter(new FileWriter(file));
-         writer.write(rootObject.toJSONString());
-         writer.close();
-      }
-      catch (IOException e) {
-         Log.e(TAG, "Could not write SMS JSON to external media");
-      }
-
-      // Finally insert values into the database
-      String filterId = values.getAsString(BlacklistContract.Logs.FILTER_ID);
+      // Insert the location of the message file into the database
+      String filterId = values.getAsString(Contract.Logs.FILTER_ID);
 
       ContentValues logValues = new ContentValues();
-      logValues.put(BlacklistContract.Logs.FILTER_ID, filterId);
-      logValues.put(BlacklistContract.Logs.PATH, file.getName());
+      logValues.put(Contract.Logs.FILTER_ID, filterId);
+      logValues.put(Contract.Logs.PATH, dataFile.getName());
 
       long rowId = db.insert(DatabaseHelper.TABLE_LOGS, null, logValues);
       db.execSQL(
          String.format(
             "update %s set %s = %s + 1 where %s = ?",
             DatabaseHelper.TABLE_FILTERS,
-            BlacklistContract.Filters.UNREAD,
-            BlacklistContract.Filters.UNREAD,
-            BlacklistContract.Filters._ID),
+            Contract.Filters.UNREAD,
+            Contract.Filters.UNREAD,
+            Contract.Filters._ID),
          new String[] {
             filterId
          });
 
       if (rowId > 0) {
-         toReturn = BlacklistContract.buildLogsUri(rowId);
+         toReturn = Contract.buildLogsUri(rowId);
          getContext().getContentResolver().notifyChange(toReturn, null);
          getContext().getContentResolver().notifyChange(
-            BlacklistContract.buildFilterUri(Long.valueOf(filterId)), null);
+            Contract.buildFilterUri(Long.valueOf(filterId)), null);
       }
       else {
          throw new SQLException(String.format("Failed to insert row into %s", uri));

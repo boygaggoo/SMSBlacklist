@@ -5,6 +5,52 @@
     android:gravity="fill_horizontal"
     android:orientation="vertical">
 
+    <RelativeLayout
+        android:id="@+id/relativeLayout1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:background="@drawable/metallic_gradient">
+
+        <ImageView
+            android:id="@+id/filterPreviewMatch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerInParent="true"
+            android:src="@drawable/btn_check_buttonless_on"
+            android:visibility="invisible" />
+
+        <EditText
+            android:id="@+id/filterPreview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:layout_centerVertical="true"
+            android:layout_marginBottom="15dip"
+            android:layout_marginLeft="15dip"
+            android:layout_toLeftOf="@id/filterPreviewMatch"
+            android:background="@drawable/phone_background"
+            android:freezesText="true"
+            android:gravity="center_vertical|center_horizontal"
+            android:height="44dip"
+            android:hint="@string/hint_filterPreview"
+            android:padding="8dip"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="#FFFFFF"
+            android:textSize="22dip" android:inputType="phone" android:ellipsize="start" android:textColorHint="#D0E0D0">
+
+            <requestFocus />
+        </EditText>
+
+        <TextView
+            android:id="@+id/filterPreviewStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/filterPreview"
+            android:layout_marginLeft="15dip" android:textColor="#94BE21"/>
+
+    </RelativeLayout>
+
     <ListView
         android:id="@+id/android:list"
         android:layout_width="match_parent"

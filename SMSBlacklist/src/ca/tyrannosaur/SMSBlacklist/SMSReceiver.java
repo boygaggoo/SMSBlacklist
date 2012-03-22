@@ -22,30 +22,18 @@ public class SMSReceiver extends BroadcastReceiver {
    private static final String TAG = Blacklist.class.getName();
    private static final String SMS_RECEIVED = "android.provider.Telephony.SMS_RECEIVED";
 
-   /**
-    * Build a regular expression {@link Pattern} to match a filter and affinity.
-    * Affinities determine which side (if any) of the string contain a wildcard.
-    * 
-    * {@link AFFINITY_EXACT} matches a filter exactly. {@link AFFINITY_LEFT}
-    * produces a regular expression with a wildcard to the right.
-    * {@link AFFINITY_RIGHT} produces a regular expression with a wildcard to
-    * the left.
-    * 
-    * For instance, a right affinity will match filter {@code 1234} to
-    * {@code 00001234}, but not match {@code 12340000}
-    * 
-    * 
-    * @param c
-    *           a {@link Cursor} containing filters and affinities
-    * @return a {@link Pattern} used to test a phone number
-    */
-   private Pattern buildFilterPattern(Cursor c) {
+   private Pattern buildFilterPattern(Cursor c) {      
       String affinity = c.getString(
-         c.getColumnIndexOrThrow(BlacklistContract.Filters.FILTER_MATCH_AFFINITY));
-      String text = c.getString(
-         c.getColumnIndexOrThrow(BlacklistContract.Filters.FILTER_TEXT));
+                           c.getColumnIndexOrThrow(
+                                 Contract.Filters.FILTER_MATCH_AFFINITY));
 
-      return BlacklistContract.buildFilterPattern(text, affinity);
+      String text = c.getString(
+                        c.getColumnIndexOrThrow(
+                                 Contract.Filters.FILTER_TEXT));
+
+      return Contract.buildFilterPattern(
+               text,
+               affinity);
    }
 
    private int filterBlacklistedMessages(Context context, Intent intent) {
@@ -56,11 +44,11 @@ public class SMSReceiver extends BroadcastReceiver {
       if (bundle != null) {
          // Get a list of filters
          Cursor filters = contentResolver.query(
-            BlacklistContract.buildFiltersListUri(), 
-            null, 
-            null, 
-            null, 
-            BlacklistContract.Filters.DEFAULT_SORT_ORDER);
+                  Contract.buildFiltersListUri(),
+                  null,
+                  null,
+                  null,
+                  Contract.Filters.DEFAULT_SORT_ORDER);
 
          // The raw SMS data
          Object[] pdus = (Object[]) bundle.get("pdus");
@@ -85,40 +73,43 @@ public class SMSReceiver extends BroadcastReceiver {
                try {
                   filterPattern = buildFilterPattern(filters);
                   filterMatcher = filterPattern.matcher(message.getOriginatingAddress());
-   
+
                   // Stuff the invalid message in an array for later
                   if (filterMatcher.matches()) {
-                     ContentValues row = new ContentValues();
+                     ContentValues row = new ContentValues();                     
                      row.put(
-                        BlacklistContract.Filters.FILTER_TEXT, 
-                        filters.getString(filters.getColumnIndexOrThrow(BlacklistContract.Filters.FILTER_TEXT)));
+                              Contract.Filters.FILTER_TEXT,
+                              filters.getString(filters.getColumnIndexOrThrow(Contract.Filters.FILTER_TEXT)));
                      row.put(
-                        BlacklistContract.Filters.FILTER_MATCH_AFFINITY, 
-                        filters.getString(filters.getColumnIndexOrThrow(BlacklistContract.Filters.FILTER_MATCH_AFFINITY)));
+                              Contract.Filters.FILTER_MATCH_AFFINITY,
+                              filters.getString(filters.getColumnIndexOrThrow(Contract.Filters.FILTER_MATCH_AFFINITY)));
                      row.put(
-                        BlacklistContract.Filters.NOTE, 
-                        filters.getString(filters.getColumnIndexOrThrow(BlacklistContract.Filters.NOTE)));
+                              Contract.Filters.NOTE,
+                              filters.getString(filters.getColumnIndexOrThrow(Contract.Filters.NOTE)));
                      row.put(
-                        BlacklistContract.Logs.DATE_RECEIVED, 
-                        message.getTimestampMillis());
+                              Contract.Logs.DATE_RECEIVED,
+                              message.getTimestampMillis());
                      row.put(
-                        BlacklistContract.Logs.FILTER_ID, 
-                        filters.getString(filters.getColumnIndexOrThrow(BlacklistContract.Filters._ID)));
+                              Contract.Logs.FILTER_ID,
+                              filters.getString(filters.getColumnIndexOrThrow(Contract.Filters._ID)));
                      row.put(
-                        BlacklistContract.Logs.MESSAGE_PDU, 
-                        message.getPdu().clone());
-   
+                              Contract.Logs.MESSAGE_PDU,
+                              message.getPdu().clone());
+
                      invalidMessages.add(row);
                      invalidFound = true;
                      break;
                   }
                }
                catch (PatternSyntaxException e) {
-                  Log.w(TAG, "An invalid pattern was inserted in the database", e);
+                  Log.w(
+                           TAG,
+                           "An invalid pattern was inserted in the database",
+                           e);
                }
-               
+
                filters.moveToNext();
-                  
+
             }
 
             if (!invalidFound)
@@ -132,12 +123,16 @@ public class SMSReceiver extends BroadcastReceiver {
             byte[][] trimmed = new byte[cValid][];
             for (int i = 0; i < cValid; i++)
                trimmed[i] = validPdus[i].clone();
-            bundle.putSerializable("pdus", trimmed);
+            bundle.putSerializable(
+                     "pdus",
+                     trimmed);
          }
 
          // Write the messages to the log
          ContentValues[] cv = invalidMessages.toArray(new ContentValues[invalidMessages.size()]);
-         contentResolver.bulkInsert(BlacklistContract.buildLogsListUri(), cv);
+         contentResolver.bulkInsert(
+                  Contract.buildLogsListUri(),
+                  cv);
 
          // Prevent this broadcast from propagating if there are no valid
          // messages
@@ -153,16 +148,14 @@ public class SMSReceiver extends BroadcastReceiver {
    @Override
    public void onReceive(Context context, Intent intent) {
       Log.d(TAG, "Examining new SMSes...");
-
       Intent startService = new Intent(BlacklistService.ACTION_START_SERVICE);
 
       try {
          // Start the service if it's been killed for some reason
          context.startService(startService);
 
-         // Bind the already-running service to the api. Since the service is
-         // using
-         // IPC, all calls will not be blocking.
+         // Bind the already-running service to the API. Since the service is
+         // using IPC, all calls will not be blocking.
          IBinder service = peekService(context, startService);
 
          BlacklistApi api = BlacklistApi.Stub.asInterface(service);

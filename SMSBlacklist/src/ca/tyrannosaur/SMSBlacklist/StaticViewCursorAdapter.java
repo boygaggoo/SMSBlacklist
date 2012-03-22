@@ -19,8 +19,9 @@ import android.widget.TextView;
  */
 public class StaticViewCursorAdapter extends SimpleCursorAdapter {
 
-   public final static int POSITION_BOTTOM = 0, POSITION_TOP = 1;
-
+   public final static int POSITION_BOTTOM = 0, 
+                           POSITION_TOP = 1;
+   
    public final static int INVALID_ID = -1;
 
    public final static int TYPE_STATIC_VIEW = 0;
@@ -173,10 +174,10 @@ public class StaticViewCursorAdapter extends SimpleCursorAdapter {
       Cursor c = this.getCursor();
       c.moveToPosition(position);
 
-      String filterText = c.getString(c.getColumnIndexOrThrow(BlacklistContract.Filters.FILTER_TEXT));
-      String affinity = c.getString(c.getColumnIndexOrThrow(BlacklistContract.Filters.FILTER_MATCH_AFFINITY));
-      String note = c.getString(c.getColumnIndexOrThrow(BlacklistContract.Filters.NOTE));
-      int unread = c.getInt(c.getColumnIndexOrThrow(BlacklistContract.Filters.UNREAD));
+      String filterText = c.getString(c.getColumnIndexOrThrow(Contract.Filters.FILTER_TEXT));
+      String affinity = c.getString(c.getColumnIndexOrThrow(Contract.Filters.FILTER_MATCH_AFFINITY));
+      String note = c.getString(c.getColumnIndexOrThrow(Contract.Filters.NOTE));
+      int unread = c.getInt(c.getColumnIndexOrThrow(Contract.Filters.UNREAD));
 
       if (unread > 1)         
          holder.filterAndCount.setText(Html.fromHtml(String.format("<b>%s</b> (%d)", filterText, unread)));
@@ -185,15 +186,15 @@ public class StaticViewCursorAdapter extends SimpleCursorAdapter {
 
       holder.note.setText(note);
 
-      if (BlacklistContract.Filters.AFFINITY_EXACT.equals(affinity))
+      if (Contract.Filters.AFFINITY_EXACT.equals(affinity))
          holder.filterAffinity.setImageResource(R.drawable.list_affinity_exact);
-      else if (BlacklistContract.Filters.AFFINITY_LEFT.equals(affinity))
+      else if (Contract.Filters.AFFINITY_LEFT.equals(affinity))
          holder.filterAffinity.setImageResource(R.drawable.list_affinity_left);
-      else if (BlacklistContract.Filters.AFFINITY_RIGHT.equals(affinity))
+      else if (Contract.Filters.AFFINITY_RIGHT.equals(affinity))
          holder.filterAffinity.setImageResource(R.drawable.list_affinity_right);
-      else if (BlacklistContract.Filters.AFFINITY_SUBSTR.equals(affinity))
+      else if (Contract.Filters.AFFINITY_SUBSTR.equals(affinity))
          holder.filterAffinity.setImageResource(R.drawable.list_affinity_substr);
-      else if (BlacklistContract.Filters.AFFINITY_REGEX.equals(affinity))
+      else if (Contract.Filters.AFFINITY_REGEX.equals(affinity))
          holder.filterAffinity.setImageResource(R.drawable.list_affinity_regexp);
       else
          holder.filterAffinity.setImageResource(R.drawable.list_affinity_unknown);

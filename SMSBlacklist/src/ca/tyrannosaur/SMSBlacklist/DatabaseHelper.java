@@ -23,23 +23,23 @@ public class DatabaseHelper extends SQLiteOpenHelper {
               String.format("create table if not exists %s (%s integer primary key autoincrement, %s text not null," +
                     "%s text not null, %s text not null, %s integer not null default 0);",
                  TABLE_FILTERS,
-                 BlacklistContract.Filters._ID,
-                 BlacklistContract.Filters.FILTER_TEXT,
-                 BlacklistContract.Filters.NOTE,
-                 BlacklistContract.Filters.FILTER_MATCH_AFFINITY,
-                 BlacklistContract.Filters.UNREAD));
+                 Contract.Filters._ID,
+                 Contract.Filters.FILTER_TEXT,
+                 Contract.Filters.NOTE,
+                 Contract.Filters.FILTER_MATCH_AFFINITY,
+                 Contract.Filters.UNREAD));
    }
 
    private void createLogs(SQLiteDatabase database) {
       database.execSQL(String.format("create table if not exists %s (%s integer primary key autoincrement, %s integer," +
             "%s text, foreign key (%s) references %s(%s) ON DELETE CASCADE);",
          TABLE_LOGS,
-         BlacklistContract.Logs._ID,
-         BlacklistContract.Logs.FILTER_ID,
-         BlacklistContract.Logs.PATH,
-         BlacklistContract.Logs.FILTER_ID,
+         Contract.Logs._ID,
+         Contract.Logs.FILTER_ID,
+         Contract.Logs.PATH,
+         Contract.Logs.FILTER_ID,
          TABLE_FILTERS,
-         BlacklistContract.Filters._ID));
+         Contract.Filters._ID));
    }
 
    @Override
@@ -55,12 +55,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
          String.format("Updgrading database from version %d to %d. This will not destroy data.",
             oldVersion,
             newVersion));
-
-      /*
-       * database.execSQL(String.format("drop table if exists %s",
-       * TABLE_FILTERS));
-       * database.execSQL(String.format("drop table if exists %s", TABLE_LOGS));
-       */
 
       onCreate(database);
    }

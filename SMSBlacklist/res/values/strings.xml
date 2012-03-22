@@ -3,7 +3,7 @@
     <string name="app_name">SMS Blacklist</string>
     
     <string name="dialog_title_confirmClearAll">Clear all filters?</string>
-    <string name="dialog_text_about" formatted="false">version %s\n\nCreated to aid in Geneva\'s battle against robot messages ♥\n\nPost all issues on Github and I\'ll fix them!\n\ngithub.com/tyrannosaur/SMSBlacklist</string>    
+    <string name="dialog_text_about" formatted="false">Created to aid in Geneva\'s battle against robot messages ♥\n\nPost all issues on Github and I\'ll fix them!\n\nhttps://github.com/tyrannosaur/SMSBlacklist</string>    
     
     <string name="main_list_empty">There are no filters</string>
     
@@ -19,12 +19,15 @@
     <string name="label_filterNote">Note</string>
     <string name="label_filterAffinity">Start matching from</string>
     
+    <string name="label_filterPreviewStatus_match">This number is blacklisted!</string>
+    <string name="label_filterPreviewStatus_no_match"></string>
+    
     <string name="hint_filterPreview">test a number</string>
     <string name="hint_filterText">enter a full or partial number</string>
     <string name="hint_filterNote">a descriptive note</string>    
     
     <string name="label_addFilter">Add filter</string>
-    <string name="label_addFilterDescription">Create a new filter</string>
+    <string name="label_addFilterDescription">Create a new filter</string>    
     
     <string name="notification_blacklistEnabled">Incoming SMSes are being filtered</string>
     <string name="toast_blacklistDisabled">Incoming SMSes are not being filtered</string>
@@ -36,6 +39,5 @@
     <string name="affinity_right">end of number</string>
     <string name="affinity_exact">exact number</string>
     <string name="affinity_substr">anywhere in the number</string>
-    <string name="affinity_regex">regular expression</string>
-
+    <string name="affinity_regex">regular expression</string> 
 </resources>
