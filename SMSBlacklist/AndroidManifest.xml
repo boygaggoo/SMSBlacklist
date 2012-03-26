@@ -2,19 +2,22 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     android:installLocation="internalOnly"
     package="ca.tyrannosaur.SMSBlacklist"
-    android:versionCode="8"
-    android:versionName="2.3" >
+    android:versionCode="9"
+    android:versionName="2.4" >
 
     <!--
          In order for this to start on boot, it cannot
          be on external media.
-         See: http://stackoverflow.com/questions/2784441/trying-to-start-a-service-on-boot-on-android
+         See: http://stackoverflow.com/questions/2784441/trying-to-start-a-service-on-boot-on-android
+
     -->
 
     <uses-sdk android:minSdkVersion="8" />
 
-    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.BROADCAST_SMS" /><uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    
+    
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
@@ -51,16 +54,21 @@
 
         <!-- Wait for SMSes to be received. A higher priority will result in the receiver handling the messages first -->
         <receiver android:name="ca.tyrannosaur.SMSBlacklist.SMSReceiver" >
-            <intent-filter android:priority="100000" >
+            <intent-filter android:priority="1000" >
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
 
         <service
-            android:name="ca.tyrannosaur.SMSBlacklist.BlacklistService"
-            android:process=":remote" >
+            android:name="ca.tyrannosaur.SMSBlacklist.BlacklistService">
             <intent-filter>
                 <action android:name="ca.tyrannosaur.SMSBlacklist.BlacklistService.START_SERVICE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="ca.tyrannosaur.SMSBlacklist.BlacklistService.START_AND_FILTER" />
+                <category android:name="android.intent.category.DEFAULT" />                
             </intent-filter>
         </service>
 
