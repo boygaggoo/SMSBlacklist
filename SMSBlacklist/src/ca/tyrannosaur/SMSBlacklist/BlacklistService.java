@@ -278,7 +278,7 @@ public class BlacklistService extends Service {
       Context context =  getApplicationContext();
       boolean shouldRebroadcast = true;
   
-      if (ACTION_START_AND_FILTER.equals(intent.getAction())) {         
+      if (intent != null && ACTION_START_AND_FILTER.equals(intent.getAction())) {         
          try {
             if (apiEndpoint.getEnabled()) {               
                shouldRebroadcast = filterBlacklistedMessages(context, intent) > 0;                             
@@ -286,6 +286,9 @@ public class BlacklistService extends Service {
          }
          catch (RemoteException e) {
             Log.d(TAG, "Could not connect to API");
+         }
+         catch (NullPointerException e) {
+            Log.d(TAG, "API not ready");
          }
          finally {         
             if (shouldRebroadcast) {
